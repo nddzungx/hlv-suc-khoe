@@ -4,15 +4,23 @@ import * as E from './engine.js';
 import { viewer, snapshot, webglOK } from './viewer3d.js';
 import { toLunar, lunarLabel, isVegLunar, VEG_SETS } from './lunar.js';
 import * as PHO from './photos.js';
+import { missing as I18N_MISSING, T, translateDOM, observeBody, getLang, setLang, isEN, LANGS, LOCALE, setUnits, imp, wOut, wIn, lOut, lIn, WU, LU, COUNTRIES, guessCountry, sos } from './i18n.js';
+import { applyEN } from './data_en.js';
+import * as DATA from './data.js';
+if (isEN()) applyEN(DATA);
+document.documentElement.lang = getLang();
 
-export const VERSION = '1.1.1';
-const APP_URL = 'https://nddzungx.github.io/hlv-suc-khoe/', REPO_URL = 'https://github.com/nddzungx/hlv-suc-khoe';
+export const VERSION = '1.2.2';
+const APP_URL = 'https://app.hlvsuckhoe.com/', REPO_URL = 'https://github.com/nddzungx/hlv-suc-khoe';
+const PAYPAL = { email: 'ndd.phateco@gmail.com', me: '' }; // me: dán link paypal.me/... nếu có
 const AUTHOR = 'Nguyễn Đức Dũng', EMAIL = 'nddzungx@gmail.com', BANK = { name: 'NGUYEN DUC DUNG', bank: 'BIDV', acc: '3210256468' };
 const KEY = 'hlvsk.v1';
 let S = null;
 try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { }
 S = S || { profiles: [], active: null, settings: { voice: true, sound: true } };
 S.settings = S.settings || { voice: true, sound: true };
+S.settings.country = S.settings.country || guessCountry();
+const SOS = () => sos(S.settings.country);
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { toast('Không lưu được dữ liệu – bộ nhớ trình duyệt có thể đã đầy.'); } };
 try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) { }
 
@@ -25,9 +33,9 @@ const LOG = (d = ui.day) => { const p = P(); p.logs = p.logs || {}; return (p.lo
 const $ = (s, r = document) => r.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const md = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
-const n0 = x => x == null || isNaN(x) ? '–' : Math.round(x).toLocaleString('vi-VN');
-const n1 = x => x == null || isNaN(x) ? '–' : (Math.round(x * 10) / 10).toLocaleString('vi-VN');
-const fmtQ = (F, q) => { q = Math.round(q * 10) / 10; const qs = String(q).replace('.', ','); const u = q === 1 ? F.unit : F.unit.replace(/\s*\(.*\)/, ''); return /^1 /.test(u) ? `${qs} ${u.slice(2)}` : `${qs} × ${u}`; };
+const n0 = x => x == null || isNaN(x) ? '–' : Math.round(x).toLocaleString(LOCALE());
+const n1 = x => x == null || isNaN(x) ? '–' : (Math.round(x * 10) / 10).toLocaleString(LOCALE());
+const fmtQ = (F, q) => { q = Math.round(q * 10) / 10; const qs = q.toLocaleString(LOCALE()); const u = q === 1 ? F.unit : F.unit.replace(/\s*\(.*\)/, ''); return `<span class="nt">${/^1 /.test(u) ? `${qs} ${u.slice(2)}` : `${qs} × ${u}`}</span>`; };
 const fmtT = s => { s = Math.max(0, Math.ceil(s)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 const GOALS = {
   lose: { icon: '🔥', name: 'Giảm mỡ, giảm cân', d: 'Giảm cân an toàn, giữ cơ, vòng eo nhỏ lại' },
@@ -43,7 +51,7 @@ const AVATARS = ['🙂', '😎', '👩', '👨', '👧', '👦', '👵', '👴',
 
 // ---------- tiện ích ----------
 let toastT;
-function toast(msg) { let t = $('#toast'); if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); } t.textContent = msg; t.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(() => t.style.display = 'none', 2600); }
+function toast(msg) { msg = T(msg); let t = $('#toast'); if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); } t.textContent = msg; t.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(() => t.style.display = 'none', 2600); }
 const charts = [];
 function chart(fn, h = 180) { const id = 'c' + Math.random().toString(36).slice(2, 8); charts.push([id, fn]); return `<canvas class="chart" id="${id}" style="height:${h}px"></canvas>`; }
 function runCharts() { while (charts.length) { const [id, fn] = charts.shift(); const c = document.getElementById(id); if (!c) continue; const r = c.getBoundingClientRect(); const dpr = Math.min(2, devicePixelRatio || 1); c.width = r.width * dpr; c.height = r.height * dpr; const g = c.getContext('2d'); g.scale(dpr, dpr); fn(g, r.width, r.height); } }
@@ -60,7 +68,7 @@ function drawBars(g, w, h, vals, labels, color = '#14b37d', goal = null, unit = 
 }
 function drawLine(g, w, h, series, x0, x1, fmtX) {
   const pad = { l: 36, r: 20, t: 10, b: 22 }; const all = series.flatMap(s => s.pts.map(p => p[1]));
-  if (!all.length) { g.fillStyle = css('--muted'); g.font = '13px system-ui'; g.textAlign = 'center'; g.fillText('Chưa có dữ liệu', w / 2, h / 2); return; }
+  if (!all.length) { g.fillStyle = css('--muted'); g.font = '13px system-ui'; g.textAlign = 'center'; g.fillText(T('Chưa có dữ liệu'), w / 2, h / 2); return; }
   let lo = Math.min(...all), hi = Math.max(...all); if (hi - lo < 2) { lo -= 1; hi += 1; } const m = (hi - lo) * 0.1; lo -= m; hi += m;
   const iw = w - pad.l - pad.r, ih = h - pad.t - pad.b, X = x => pad.l + iw * (x - x0) / Math.max(1, x1 - x0), Y = y => pad.t + ih - ih * (y - lo) / (hi - lo);
   g.font = '11px system-ui'; g.strokeStyle = css('--line'); g.fillStyle = css('--muted');
@@ -76,16 +84,18 @@ function drawLine(g, w, h, series, x0, x1, fmtX) {
 // ---------- âm thanh & giọng nói ----------
 let actx = null;
 function beep(f = 880, d = 0.12, v = 0.15) { if (!S.settings.sound) return; try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const o = actx.createOscillator(), gn = actx.createGain(); o.frequency.value = f; gn.gain.value = v; o.connect(gn); gn.connect(actx.destination); o.start(); gn.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + d); o.stop(actx.currentTime + d + 0.02); } catch (e) { } }
-function say(t) { if (!S.settings.voice || !window.speechSynthesis) return; try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = 'vi-VN'; u.rate = 1.02; const v = speechSynthesis.getVoices().find(v => /^vi/i.test(v.lang)); if (v) u.voice = v; speechSynthesis.speak(u); } catch (e) { } }
+function say(t) { if (!S.settings.voice || !window.speechSynthesis) return; try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(T(t)); const L = isEN() ? 'en' : 'vi'; u.lang = isEN() ? 'en-US' : 'vi-VN'; u.rate = 1.02; const v = speechSynthesis.getVoices().find(v => v.lang.toLowerCase().startsWith(L)); if (v) u.voice = v; speechSynthesis.speak(u); } catch (e) { } }
 
 // =====================================================================
 // RENDER CHÍNH
 // =====================================================================
 function render() {
   const app = $('#app');
+  setUnits(ob ? ob.d.units : (P() && P().units));
   if (ob) app.innerHTML = renderOb();
   else if (!P()) { startOb(); app.innerHTML = renderOb(); }
   else app.innerHTML = renderShell();
+  translateDOM(app);
   renderLayer();
 }
 function renderLayer() {
@@ -93,6 +103,7 @@ function renderLayer() {
   const pg = ui.pages[ui.pages.length - 1];
   const old = $('.page', L); const st = old ? old.scrollTop : 0; const sameP = old && old.dataset.key === (pg && pg.key);
   L.innerHTML = (pg ? `<div class="page" data-key="${esc(pg.key)}"><div class="page-in">${renderPage(pg)}</div></div>` : '') + (ui.sheet ? renderSheet() : '') + (pl ? `<div class="player">${renderPlayer()}</div>` : '');
+  translateDOM(L);
   if (sameP) $('.page', L).scrollTop = st;
   document.body.style.overflow = pg || pl || ui.sheet ? 'hidden' : '';
   runCharts(); mount3d();
@@ -114,7 +125,7 @@ function pop() { ui.pages.pop(); renderLayer(); }
 // KHỞI TẠO HỒ SƠ (ONBOARDING)
 // =====================================================================
 function startOb(edit) {
-  const base = { name: '', avatar: '🙂', sex: '', birthYear: '', height: '', weight: '', waist: '', health: [], activity: 'light', fitness: { self: 1 }, days: 3, minutes: 20, timeSlot: 'toi', sleepHours: 7, place: 'home', equip: [], likes: [], diet: 'man', eatStyle: 'nha', track: 'plate', vegDays: '2', badHabits: [], goal: '', targetWeight: '', targetWeeks: '', why: '' };
+  const base = { units: (COUNTRIES[S.settings.country] || COUNTRIES.VN)[2], name: '', avatar: '🙂', sex: '', birthYear: '', height: '', weight: '', waist: '', health: [], activity: 'light', fitness: { self: 1 }, days: 3, minutes: 20, timeSlot: 'toi', sleepHours: 7, place: 'home', equip: [], likes: [], diet: 'man', eatStyle: 'nha', track: 'plate', vegDays: '2', badHabits: [], goal: '', targetWeight: '', targetWeeks: '', why: '' };
   ob = edit ? { step: 1, edit: edit.id, d: JSON.parse(JSON.stringify({ ...base, ...edit, logs: undefined })) } : { step: 0, d: base };
 }
 const OB_STEPS = 8;
@@ -122,13 +133,14 @@ function chips(k, opts, multi = false, cur) {
   cur = cur ?? getK(ob.d, k);
   return `<div class="chips">${Object.entries(opts).map(([v, l]) => `<span class="chip ${multi ? (cur || []).includes(v) ? 'on' : '' : String(cur) === v ? 'on' : ''}" data-a="${multi ? 'obtog' : 'obset'}" data-k="${k}" data-v="${v}">${l}</span>`).join('')}</div>`;
 }
+function langChips() { return `<div class="chips">${Object.entries(LANGS).map(([k, l]) => `<span class="chip nt ${getLang() === k ? 'on' : ''}" data-a="setLang" data-v="${k}" style="padding:5px 11px;font-size:13px">${k === 'vi' ? '🇻🇳' : '🇬🇧'} ${l}</span>`).join('')}</div>`; }
 function getK(o, k) { return k.split('.').reduce((a, x) => a && a[x], o); }
 function setK(o, k, v) { const ks = k.split('.'); let a = o; ks.slice(0, -1).forEach(x => a = a[x] = a[x] || {}); a[ks[ks.length - 1]] = v; }
-function num(k, unit, ph = '', step = 'any') { const v = getK(ob.d, k); return `<div class="unit"><input class="in" type="number" inputmode="decimal" step="${step}" data-k="${k}" value="${v ?? ''}" placeholder="${ph}"><span>${unit}</span></div>`; }
+function num(k, unit, ph = '', step = 'any', u = '') { let v = getK(ob.d, k); if (u && v !== '' && v != null) v = u === 'w' ? wOut(+v) : lOut(+v); return `<div class="unit"><input class="in" type="number" inputmode="decimal" step="${step}" data-k="${k}" ${u ? `data-u="${u}"` : ''} value="${v ?? ''}" placeholder="${ph}"><span>${unit}</span></div>`; }
 function renderOb() {
   const d = ob.d, s = ob.step;
   let body = '';
-  if (s === 0) body = `<div class="c" style="padding-top:3vh"><div style="font-size:72px">💪</div><h2>HLV Sức Khỏe</h2>
+  if (s === 0) body = `<div class="row" style="justify-content:flex-end">${langChips()}</div><div class="c" style="padding-top:1vh"><img src="img/logo.svg" alt="HLV Sức Khỏe" style="width:96px;height:96px;border-radius:22px;box-shadow:0 6px 20px rgba(15,138,95,.3)"><h2>HLV Sức Khỏe</h2>
     <p class="muted">Huấn luyện viên cá nhân bỏ túi cho người Việt – từ thói quen nhỏ mỗi ngày đến cơ thể khỏe mạnh lâu dài.</p></div>
     <div class="card"><div class="check on" style="cursor:default"><span class="em">🌱</span><span>Bắt đầu nhỏ: 10 phút/ngày, 3 thói quen đơn giản</span></div>
     <div class="check on" style="cursor:default"><span class="em">🧍</span><span>Bài tập minh họa 3D, xoay 360°, tô sáng nhóm cơ</span></div>
@@ -141,10 +153,12 @@ function renderOb() {
   if (s === 1) body = `<h2>Thông tin cơ bản</h2><p class="muted">Để tính nhu cầu năng lượng và lộ trình phù hợp.</p>
     <label class="f">Tên gọi</label><input class="in" data-k="name" value="${esc(d.name)}" placeholder="Ví dụ: Minh">
     <label class="f">Biểu tượng</label><div class="chips">${AVATARS.map(a => `<span class="chip ${d.avatar === a ? 'on' : ''}" data-a="obset" data-k="avatar" data-v="${a}" style="font-size:20px;padding:4px 9px">${a}</span>`).join('')}</div>
+    <label class="f">Nơi bạn đang sống</label><select class="in" data-a2="obCountry">${Object.entries(COUNTRIES).map(([k, c]) => `<option value="${k}" ${S.settings.country === k ? 'selected' : ''}>${c[0]}</option>`).join('')}</select>
+    <label class="f">Đơn vị đo</label>${chips('units', { metric: 'kg · cm', imperial: 'lb · in (pound, inch)' })}
     <label class="f">Giới tính</label>${chips('sex', { male: '👨 Nam', female: '👩 Nữ' })}
     <label class="f">Năm sinh</label>${num('birthYear', '', 'VD: 1990', 1)}
-    <div class="inrow"><div><label class="f">Chiều cao</label>${num('height', 'cm', '165')}</div><div><label class="f">Cân nặng</label>${num('weight', 'kg', '60')}</div></div>
-    <label class="f">Vòng eo <span class="muted small">(tùy chọn)</span></label>${num('waist', 'cm', 'Đo ngang rốn, thở ra nhẹ')}
+    <div class="inrow"><div><label class="f">Chiều cao</label>${num('height', 'cm', imp() ? '66' : '165', 'any', 'l')}</div><div><label class="f">Cân nặng</label>${num('weight', 'kg', imp() ? '130' : '60', 'any', 'w')}</div></div>
+    <label class="f">Vòng eo <span class="muted small">(tùy chọn)</span></label>${num('waist', 'cm', 'Đo ngang rốn, thở ra nhẹ', 'any', 'l')}
     <p class="tiny muted">Mẹo: cân và đo buổi sáng, sau khi đi vệ sinh, trước khi ăn.</p>`;
   if (s === 2) body = `<h2>Sức khỏe & mức vận động</h2><p class="muted">Chọn tất cả tình trạng đang có (nếu có) để HLV loại bỏ bài không an toàn.</p>
     ${Object.entries(HEALTH).filter(([k]) => d.sex === 'female' || !['pregnant', 'postpartum'].includes(k)).map(([k, l]) => `<div class="check ${d.health.includes(k) ? 'on' : ''}" data-a="obtog" data-k="health" data-v="${k}"><span class="box">✓</span><span class="txt" style="text-decoration:none;color:inherit">${l}</span></div>`).join('')}
@@ -179,13 +193,13 @@ function renderOb() {
     const needW = ['lose', 'muscle', 'gain'].includes(d.goal);
     body = `<h2>Mục tiêu của bạn</h2>
     ${Object.entries(GOALS).map(([k, g]) => `<button class="opt ${d.goal === k ? 'on' : ''}" data-a="obset" data-k="goal" data-v="${k}"><span class="ic">${g.icon}</span><span><div class="t">${g.name}</div><div class="d">${g.d}</div></span></button>`).join('')}
-    ${needW ? `<div class="inrow"><div><label class="f">Cân nặng mong muốn</label>${num('targetWeight', 'kg', '')}</div><div><label class="f">Trong khoảng</label>${num('targetWeeks', 'tuần', 'VD: 12', 1)}</div></div><p class="tiny muted">Có thể để trống – HLV sẽ đề xuất thời gian an toàn.</p>` : ''}
+    ${needW ? `<div class="inrow"><div><label class="f">Cân nặng mong muốn</label>${num('targetWeight', 'kg', '', 'any', 'w')}</div><div><label class="f">Trong khoảng</label>${num('targetWeeks', 'tuần', 'VD: 12', 1)}</div></div><p class="tiny muted">Có thể để trống – HLV sẽ đề xuất thời gian an toàn.</p>` : ''}
     <label class="f">Lý do sâu xa khiến bạn muốn thay đổi?</label><textarea class="in" rows="2" data-k="why" placeholder="VD: Đủ sức chơi với con, không còn đau lưng…">${esc(d.why)}</textarea>
     <p class="tiny muted">Lý do này sẽ được nhắc lại những ngày bạn thiếu động lực.</p>`;
   }
   if (s === 7) {
     const pr = draftProfile(); const f = E.feasibility(pr), m = f.m;
-    body = `<h2>Kết quả đánh giá</h2><p class="muted">HLV đã phân tích thể trạng, thời gian và mục tiêu của ${esc(d.name)}.</p>
+    body = `<h2>Kết quả đánh giá</h2><p class="muted">HLV đã phân tích thể trạng, thời gian và mục tiêu của <span class="nt">${esc(d.name)}</span>.</p>
     <div class="card"><div class="grid3">
       <div class="stat"><div class="v">${m.bmi}</div><div class="l">BMI</div></div>
       <div class="stat"><div class="v">${n0(m.tdee)}</div><div class="l">kcal tiêu hao/ngày</div></div>
@@ -259,8 +273,8 @@ function tabToday() {
   const hr = new Date().getHours(), greet = hr < 11 ? 'Chào buổi sáng' : hr < 14 ? 'Chào buổi trưa' : hr < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
   const ev = E.evaluate(p);
   const snooze = p.evalSnooze && p.evalSnooze >= E.today();
-  let h = `<div class="card hero"><div class="row"><div class="sp"><div class="b" style="font-size:18px">${greet}, ${esc(p.name)} 👋</div>
-    <div class="muted small">${E.DOW_FULL[E.dowMon(d)]}, ${E.fmtDate(d)} · 🌙 ${lunarLabel(d)}<br>${st.icon} ${st.name}${st.weeks ? ` – tuần ${Math.min(st.week, st.weeks)}/${st.weeks}` : ''}</div></div>
+  let h = `<div class="card hero"><div class="row"><div class="sp"><div class="b" style="font-size:18px">${greet}, <span class="nt">${esc(p.name)}</span> 👋</div>
+    <div class="muted small">${E.DOW_FULL[E.dowMon(d)]}, ${E.fmtDate(d)} · 🌙 <span>${lunarLabel(d)}</span><br>${st.icon} ${st.name}${st.weeks ? ` – tuần ${Math.min(st.week, st.weeks)}/${st.weeks}` : ''}</div></div>
     <div class="c"><div style="font-size:26px;line-height:1">🔥</div><div class="b">${streak}</div><div class="tiny muted">ngày</div></div></div>
     <div class="bar" style="margin-top:10px"><i style="width:${Math.round(hDone / Math.max(1, habits.length) * 100)}%"></i></div>
     <div class="row tiny" style="margin-top:6px"><span class="muted">Thói quen ${hDone}/${habits.length}</span><span class="sp"></span>
@@ -272,8 +286,8 @@ function tabToday() {
       <div class="row"><button class="btn sm" data-a="${act[0]}">${act[1]}</button><button class="btn sm line" data-a="snooze">Để sau</button></div></div>`;
   }
   if (p.diet === 'chay_ky') {
-    if (E.isVegDay(p, d)) h += `<div class="note ok"><span class="ni">🌕</span><span><b>Hôm nay ${lunarLabel(d)} – ngày ăn chay của bạn.</b> Thực đơn đã chuyển sang món chay. Nhớ đủ đạm: đậu phụ, sữa đậu nành, nấm, các loại đậu; hạn chế đồ chay chiên rán.</span></div>`;
-    else if (E.isVegDay(p, E.addDays(d, 1))) h += `<div class="note warn"><span class="ni">🌙</span><span><b>Ngày mai (${lunarLabel(E.addDays(d, 1))}) là ngày ăn chay.</b> Chuẩn bị sẵn đậu phụ, rau, nấm nhé.</span></div>`;
+    if (E.isVegDay(p, d)) h += `<div class="note ok"><span class="ni">🌕</span><span><b>Hôm nay <span>${lunarLabel(d)}</span> – ngày ăn chay của bạn.</b> Thực đơn đã chuyển sang món chay. Nhớ đủ đạm: đậu phụ, sữa đậu nành, nấm, các loại đậu; hạn chế đồ chay chiên rán.</span></div>`;
+    else if (E.isVegDay(p, E.addDays(d, 1))) h += `<div class="note warn"><span class="ni">🌙</span><span><b>Ngày mai (<span>${lunarLabel(E.addDays(d, 1))}</span>) là ngày ăn chay.</b> Chuẩn bị sẵn đậu phụ, rau, nấm nhé.</span></div>`;
   }
   if (isToday && PH.ok) {
     const mine = PH.pid === p.id ? PH.list : []; const last = mine.length ? mine[mine.length - 1].date : null; const every = p.photoEvery || 14;
@@ -309,8 +323,8 @@ function tabToday() {
   }
   // nhật ký
   h += `<div class="card"><h3>📝 Nhật ký cơ thể</h3>
-    <div class="grid2"><div><label class="f" style="margin-top:0">Cân nặng</label><div class="unit"><input class="in" type="number" step="0.1" inputmode="decimal" data-log="w" value="${L.w ?? ''}" placeholder="${n1(E.latestWeight(p))}"><span>kg</span></div></div>
-    <div><label class="f" style="margin-top:0">Vòng eo</label><div class="unit"><input class="in" type="number" step="0.5" inputmode="decimal" data-log="waist" value="${L.waist ?? ''}" placeholder="${p.waist || ''}"><span>cm</span></div></div>
+    <div class="grid2"><div><label class="f" style="margin-top:0">Cân nặng</label><div class="unit"><input class="in" type="number" step="0.1" inputmode="decimal" data-log="w" data-u="w" value="${L.w != null ? wOut(L.w) : ''}" placeholder="${n1(wOut(E.latestWeight(p)))}"><span>kg</span></div></div>
+    <div><label class="f" style="margin-top:0">Vòng eo</label><div class="unit"><input class="in" type="number" step="0.5" inputmode="decimal" data-log="waist" data-u="l" value="${L.waist != null ? lOut(L.waist) : ''}" placeholder="${p.waist ? lOut(p.waist) : ''}"><span>cm</span></div></div>
     <div><label class="f">Giấc ngủ</label><div class="unit"><input class="in" type="number" step="0.5" inputmode="decimal" data-log="sleep" value="${L.sleep ?? ''}" placeholder="7"><span>giờ</span></div></div>
     <div><label class="f">Số bước</label><div class="unit"><input class="in" type="number" step="100" inputmode="numeric" data-log="steps" value="${L.steps ?? ''}" placeholder="5000"><span>bước</span></div></div></div>
     <label class="f">Tâm trạng & năng lượng</label><div class="mood">${['😫', '😕', '😐', '🙂', '😄'].map((e, i) => `<button class="${L.mood === i + 1 ? 'on' : ''}" data-a="mood" data-v="${i + 1}">${e}</button>`).join('')}</div>
@@ -325,8 +339,8 @@ function tabPlan() {
   const p = P(), m = E.metrics(p), f = E.feasibility({ ...p, weight: E.latestWeight(p) }), sc = E.schedule(p), td = E.dowMon(E.today());
   const g = GOALS[p.goal];
   let h = `<div class="card"><h3>${g.icon} Mục tiêu: ${g.name}</h3>
-    ${p.targetWeight ? `<div class="row"><div class="kpi"><span class="v">${n1(E.latestWeight(p))}</span><span class="muted">kg</span></div><span class="muted">→</span><div class="kpi"><span class="v" style="color:var(--primary)">${p.targetWeight}</span><span class="muted">kg</span></div><span class="sp"></span><span class="small muted">${p.targetWeeks ? `đến ${E.fmtDate(E.addDays(p.start, p.targetWeeks * 7))}` : ''}</span></div>` : ''}
-    ${p.targetWeight && p.targetWeeks ? chart((gc, w, hh) => { const pr = E.projection(p) || []; const x0 = 0, x1 = E.diffDays(p.start, pr[pr.length - 1][0]); const real = Object.keys(p.logs || {}).filter(k => p.logs[k].w).sort().map(k => [E.diffDays(p.start, k), +p.logs[k].w]); drawLine(gc, w, hh, [{ pts: pr.map(([d, v]) => [E.diffDays(p.start, d), v]), color: '#f59e0b', dash: [5, 5], w: 2 }, { pts: [[0, p.startWeight || p.weight], ...real], color: '#14b37d', dots: true }], x0, Math.max(x1, real.length ? real[real.length - 1][0] : 1), x => E.fmtDate(E.addDays(p.start, x))); }, 160) + `<p class="tiny muted c" style="margin:2px 0 0"><span style="color:#f59e0b">- - -</span> lộ trình dự kiến · <span style="color:#14b37d">●</span> thực tế</p>` : ''}
+    ${p.targetWeight ? `<div class="row"><div class="kpi"><span class="v">${n1(wOut(E.latestWeight(p)))}</span><span class="muted">kg</span></div><span class="muted">→</span><div class="kpi"><span class="v" style="color:var(--primary)">${n1(wOut(p.targetWeight))}</span><span class="muted">kg</span></div><span class="sp"></span><span class="small muted">${p.targetWeeks ? `đến ${E.fmtDate(E.addDays(p.start, p.targetWeeks * 7))}` : ''}</span></div>` : ''}
+    ${p.targetWeight && p.targetWeeks ? chart((gc, w, hh) => { const pr = E.projection(p) || []; const x0 = 0, x1 = E.diffDays(p.start, pr[pr.length - 1][0]); const real = Object.keys(p.logs || {}).filter(k => p.logs[k].w).sort().map(k => [E.diffDays(p.start, k), +p.logs[k].w]); drawLine(gc, w, hh, [{ pts: pr.map(([d, v]) => [E.diffDays(p.start, d), wOut(v)]), color: '#f59e0b', dash: [5, 5], w: 2 }, { pts: [[0, wOut(p.startWeight || p.weight)], ...real.map(([x, y]) => [x, wOut(y)])], color: '#14b37d', dots: true }], x0, Math.max(x1, real.length ? real[real.length - 1][0] : 1), x => E.fmtDate(E.addDays(p.start, x))); }, 160) + `<p class="tiny muted c" style="margin:2px 0 0"><span style="color:#f59e0b">- - -</span> lộ trình dự kiến · <span style="color:#14b37d">●</span> thực tế</p>` : ''}
     <button class="btn sm line" data-a="editProfile" style="margin-top:8px">✏️ Sửa hồ sơ, thời gian & mục tiêu</button></div>`;
   h += `<div class="card"><h3>📐 Chỉ số của bạn</h3><div class="grid3">
     <div class="stat"><div class="v">${m.bmi}</div><div class="l">BMI</div></div><div class="stat"><div class="v">${n0(m.bmr)}</div><div class="l">BMR (kcal)</div></div><div class="stat"><div class="v">${n0(m.tdee)}</div><div class="l">TDEE (kcal)</div></div>
@@ -436,21 +450,21 @@ function tabReport() {
   const p = P(), k = ui.repKind, r = E.report(p, k, ui.repOff), m = E.metrics(p);
   let h = `<div class="seg no-print">${[['week', 'Tuần'], ['month', 'Tháng'], ['year', 'Năm']].map(([x, l]) => `<button class="${k === x ? 'on' : ''}" data-a="repKind" data-v="${x}">${l}</button>`).join('')}</div>
   <div class="row" style="margin:6px 0"><button class="btn sm line no-print" data-a="repOff" data-v="-1">‹</button><b class="sp c">${r.label}</b><button class="btn sm line no-print" data-a="repOff" data-v="1" ${ui.repOff >= 0 ? 'disabled' : ''}>›</button></div>`;
-  if (!r.nDays) return h + `<div class="card empty">Chưa có dữ liệu trong khoảng thời gian này.<br>Hành trình của ${esc(p.name)} bắt đầu từ ${E.fmtDate(p.start)}/${p.start.slice(0, 4)}.</div>`;
+  if (!r.nDays) return h + `<div class="card empty">Chưa có dữ liệu trong khoảng thời gian này.<br>Hành trình của <span class="nt">${esc(p.name)}</span> bắt đầu từ ${E.fmtDate(p.start)}/${p.start.slice(0, 4)}.</div>`;
   h += `<div class="card"><div class="row"><div class="kpi"><span class="v" style="color:${r.adherence >= 80 ? 'var(--ok)' : r.adherence >= 50 ? 'var(--warn)' : 'var(--bad)'}">${r.adherence}%</span><span class="muted">tuân thủ</span></div><span class="sp"></span><span class="small muted">${r.activeDays}/${r.nDays} ngày có hoạt động</span></div>
     <div class="grid3" style="margin-top:10px">
     <div class="stat"><div class="v">${r.done}${r.planned ? '/' + r.planned : ''}</div><div class="l">Buổi tập</div></div><div class="stat"><div class="v">${n0(r.minutes)}</div><div class="l">Phút tập</div></div><div class="stat"><div class="v">${n0(r.kcalOut)}</div><div class="l">kcal đốt khi tập</div></div>
-    <div class="stat"><div class="v">${r.hRate}%</div><div class="l">Thói quen</div></div><div class="stat"><div class="v">${r.wDelta == null ? '–' : (r.wDelta > 0 ? '+' : '') + n1(r.wDelta)}</div><div class="l">Cân nặng (kg)</div></div><div class="stat"><div class="v">${n1(r.sleep)}</div><div class="l">Ngủ TB (giờ)</div></div>
+    <div class="stat"><div class="v">${r.hRate}%</div><div class="l">Thói quen</div></div><div class="stat"><div class="v">${r.wDelta == null ? '–' : (r.wDelta > 0 ? '+' : '') + n1(wOut(r.wDelta))}</div><div class="l">Cân nặng (kg)</div></div><div class="stat"><div class="v">${n1(r.sleep)}</div><div class="l">Ngủ TB (giờ)</div></div>
     <div class="stat"><div class="v">${n1(r.water)}</div><div class="l">Nước TB (cốc)</div></div><div class="stat"><div class="v">${n0(r.steps)}</div><div class="l">Bước TB</div></div><div class="stat"><div class="v">${n0(r.kcalIn)}</div><div class="l">kcal ăn TB</div></div></div></div>`;
   // phút tập
   let vals, labels;
-  if (k === 'year') { vals = Array(12).fill(0); r.days.forEach(x => vals[+x.date.slice(5, 7) - 1] += x.minutes); labels = Array.from({ length: 12 }, (_, i) => 'T' + (i + 1)); }
-  else { const R = E.periodRange(k, ui.repOff); vals = []; labels = []; for (let d = R.from; d <= R.to; d = E.addDays(d, 1)) { const x = r.days.find(y => y.date === d); vals.push(x ? x.minutes : 0); labels.push(k === 'week' ? E.DOW[E.dowMon(d)] : String(+d.slice(8))); } }
+  if (k === 'year') { vals = Array(12).fill(0); r.days.forEach(x => vals[+x.date.slice(5, 7) - 1] += x.minutes); labels = Array.from({ length: 12 }, (_, i) => isEN() ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i] : 'T' + (i + 1)); }
+  else { const R = E.periodRange(k, ui.repOff); vals = []; labels = []; for (let d = R.from; d <= R.to; d = E.addDays(d, 1)) { const x = r.days.find(y => y.date === d); vals.push(x ? x.minutes : 0); labels.push(k === 'week' ? T(E.DOW[E.dowMon(d)]) : String(+d.slice(8))); } }
   h += `<div class="card"><h3>⏱️ Phút tập luyện</h3>${chart((g, w, hh) => drawBars(g, w, hh, vals, labels, '#14b37d', k === 'year' ? null : E.effMinutes(p)), 170)}</div>`;
   const R = E.periodRange(k, ui.repOff), x0 = 0, x1 = E.diffDays(R.from, R.to);
-  const wpts = r.weights.map(([d, w]) => [E.diffDays(R.from, d), w]);
+  const wpts = r.weights.map(([d, w]) => [E.diffDays(R.from, d), wOut(w)]);
   const series = [{ pts: wpts, color: '#14b37d', dots: true }];
-  if (p.targetWeight) series.push({ pts: [[x0, p.targetWeight], [x1, p.targetWeight]], color: '#f59e0b', dash: [5, 5], w: 1.5 });
+  if (p.targetWeight) series.push({ pts: [[x0, wOut(p.targetWeight)], [x1, wOut(p.targetWeight)]], color: '#f59e0b', dash: [5, 5], w: 1.5 });
   h += `<div class="card"><h3>⚖️ Cân nặng ${r.wDelta != null ? `<span class="r">${r.wDelta > 0 ? '+' : ''}${n1(r.wDelta)} kg</span>` : ''}</h3>${chart((g, w, hh) => drawLine(g, w, hh, wpts.length ? series : [{ pts: [] }], x0, x1, x => E.fmtDate(E.addDays(R.from, x))), 170)}
     ${p.targetWeight ? `<p class="tiny muted c" style="margin:0"><span style="color:#f59e0b">- - -</span> mục tiêu ${p.targetWeight} kg</p>` : ''}</div>`;
   // bản đồ nhiệt
@@ -506,18 +520,18 @@ function renderPage(pg) {
   }
   if (pg.type === 'lesson') {
     const l = LESSONS.find(x => x.id === pg.arg);
-    return top(l.title) + `<div class="card md"><div style="font-size:42px">${l.icon}</div><h3 style="font-size:19px">${l.title}</h3>${l.body.map(([t, c]) => t === 'p' ? `<p>${md(c)}</p>` : t === 'h' ? `<h4>${esc(c)}</h4>` : `<ul>${c.map(x => `<li>${md(x)}</li>`).join('')}</ul>`).join('')}</div>
+    return top(l.title) + `<div class="card md"><div style="font-size:42px">${l.icon}</div><h3 style="font-size:19px">${l.title}</h3>${l.body.map(([t, c]) => t === 'p' ? `<p>${md(c)}</p>` : t === 'h' ? `<h4>${esc(c)}</h4>` : `<ul>${c.map(x => `<li>${md(x)}</li>`).join('')}</ul>`).join('').replace(/\{SOS\}/g, `<span class="nt">${SOS()}</span>`)}</div>
       <p class="tiny muted c">Nội dung mang tính giáo dục sức khỏe chung, không thay thế chẩn đoán và điều trị của bác sĩ.</p>`;
   }
   if (pg.type === 'food') {
     const meal = pg.arg, groups = ['all', ...new Set(FOODS.map(f => f.group))];
     return top(`Thêm vào ${E.MEAL_NAMES[meal] || 'bữa ăn'}`) + `<input class="in" id="foodQ" placeholder="🔍 Tìm món: phở, cơm, trứng…" autocomplete="off">
       <div class="chips" style="margin:10px 0">${groups.map(g => `<span class="chip ${ui.foodGroup === g ? 'on' : ''}" data-a="foodGroup" data-v="${g}">${g === 'all' ? 'Tất cả' : g}</span>`).join('')}</div>
-      <div class="card" id="foodList">${FOODS.filter(f => ui.foodGroup === 'all' || f.group === ui.foodGroup).map(f => `<div class="list-item" data-a="pickFood" data-v="${f.id}" data-name="${esc(f.name.toLowerCase())}"><span class="sp"><div class="b small">${f.name}</div><div class="tiny muted">${f.unit} · Đ ${f.p}g · TB ${f.c}g · B ${f.f}g</div></span><b class="small">${f.kcal}</b><span class="tiny muted">kcal</span></div>`).join('')}</div>`;
+      <div class="card" id="foodList">${FOODS.filter(f => ui.foodGroup === 'all' || f.group === ui.foodGroup).map(f => `<div class="list-item" data-a="pickFood" data-v="${f.id}" data-name="${esc(f.name.toLowerCase())}"><span class="sp"><div class="b small">${f.name}</div><div class="tiny muted"><span class="nt">${f.unit}</span> · Đ ${f.p}g · TB ${f.c}g · B ${f.f}g</div></span><b class="small">${f.kcal}</b><span class="tiny muted">kcal</span></div>`).join('')}</div>`;
   }
   if (pg.type === 'foodTable') {
     return top('Bảng calo món Việt') + `<p class="small muted">Giá trị ước tính cho khẩu phần phổ biến; thực tế thay đổi theo cách nấu và lượng dầu mỡ.</p>
-      ${[...new Set(FOODS.map(f => f.group))].map(g => `<div class="card"><h3>${g}</h3>${FOODS.filter(f => f.group === g).map(f => `<div class="row small" style="padding:5px 0;border-bottom:1px solid var(--line)"><span class="sp">${f.name} <span class="muted tiny">${f.unit}</span></span><b>${f.kcal}</b><span class="tiny muted" style="width:72px;text-align:right">Đạm ${f.p}g</span></div>`).join('')}</div>`).join('')}`;
+      ${[...new Set(FOODS.map(f => f.group))].map(g => `<div class="card"><h3>${g}</h3>${FOODS.filter(f => f.group === g).map(f => `<div class="row small" style="padding:5px 0;border-bottom:1px solid var(--line)"><span class="sp">${f.name} <span class="muted tiny nt">${f.unit}</span></span><b>${f.kcal}</b><span class="tiny muted" style="width:72px;text-align:right">Đạm ${f.p}g</span></div>`).join('')}</div>`).join('')}`;
   }
   if (pg.type === 'photos') return top('Ảnh tiến độ') + photosPage();
   if (pg.type === 'guide') return top('Hướng dẫn sử dụng') + guidePage();
@@ -543,7 +557,7 @@ function photosPage() {
     h += `<div class="card"><h3>🔍 So sánh trước – sau <span class="r">${E.diffDays(A.date, B.date)} ngày</span></h3>
       <div class="inrow"><select class="in" data-a2="cmpA">${dates.map(d => `<option ${d === A.date ? 'selected' : ''}>${d}</option>`).join('')}</select><select class="in" data-a2="cmpB">${dates.map(d => `<option ${d === B.date ? 'selected' : ''}>${d}</option>`).join('')}</select></div>
       <div class="seg">${[['side', 'Cạnh nhau'], ['slide', 'Trượt so sánh']].map(([k, l]) => `<button class="${ui.phMode === k ? 'on' : ''}" data-a="phMode" data-v="${k}">${l}</button>`).join('')}</div>
-      ${ui.phMode === 'side' ? `<div class="grid2"><div><img src="${A.data}" style="width:100%;border-radius:12px;aspect-ratio:3/4;object-fit:cover"><div class="small c b">Trước · ${E.fmtDate(A.date)}</div></div><div><img src="${B.data}" style="width:100%;border-radius:12px;aspect-ratio:3/4;object-fit:cover"><div class="small c b">Sau · ${E.fmtDate(B.date)}</div></div></div>`
+      ${ui.phMode === 'side' ? `<div class="grid2"><div><img src="${A.data}" style="width:100%;border-radius:12px;aspect-ratio:3/4;object-fit:cover"><div class="small c b">Trước ${E.fmtDate(A.date)}</div></div><div><img src="${B.data}" style="width:100%;border-radius:12px;aspect-ratio:3/4;object-fit:cover"><div class="small c b">Sau ${E.fmtDate(B.date)}</div></div></div>`
       : `<div style="position:relative;border-radius:12px;overflow:hidden;aspect-ratio:3/4;background:#000"><img src="${B.data}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"><img id="cmpTop" src="${A.data}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;clip-path:inset(0 50% 0 0)"><div id="cmpLine" style="position:absolute;top:0;bottom:0;left:50%;width:2px;background:#fff;box-shadow:0 0 4px #000"></div>
          <span class="tag" style="position:absolute;left:8px;top:8px;background:rgba(0,0,0,.6);color:#fff">Trước ${E.fmtDate(A.date)}</span><span class="tag" style="position:absolute;right:8px;top:8px;background:rgba(0,0,0,.6);color:#fff">Sau ${E.fmtDate(B.date)}</span></div>
          <input type="range" id="cmpRange" min="0" max="100" value="50" style="width:100%;margin-top:8px" aria-label="Trượt để so sánh">`}
@@ -561,7 +575,7 @@ function photosPage() {
 }
 function guidePage() {
   const sec = (icon, t, items) => `<div class="card md"><h3>${icon} ${t}</h3><ul>${items.map(x => `<li>${x}</li>`).join('')}</ul></div>`;
-  return `<div class="card hero"><div class="b" style="font-size:18px">Chào mừng đến với HLV Sức Khỏe 💪</div><div class="small muted" style="margin-top:4px">Huấn luyện viên bỏ túi giúp bạn thay đổi từ những thói quen nhỏ nhất. Đọc 3 phút để dùng hiệu quả nhất.</div></div>`
+  return `<div class="card hero"><div class="row"><img src="img/logo.svg" alt="" style="width:48px;height:48px;border-radius:12px"><div class="b" style="font-size:18px">Chào mừng đến với HLV Sức Khỏe</div></div><div class="small muted" style="margin-top:4px">Huấn luyện viên bỏ túi giúp bạn thay đổi từ những thói quen nhỏ nhất. Đọc 3 phút để dùng hiệu quả nhất.</div></div>`
   + sec('🚀', '1. Bắt đầu', ['Mở ứng dụng → <b>Bắt đầu</b> → điền 7 bước: thông tin cơ bản, sức khỏe, thể lực, thời gian, cách tập & ăn, mục tiêu.', 'Bước <b>Thể lực</b>: có thể làm nhanh 3 bài kiểm tra (chống đẩy, ngồi–đứng ghế 30 giây, plank) để HLV chọn độ khó phù hợp – hoặc bỏ qua.', 'Ở bước <b>Kết quả đánh giá</b>: nếu mục tiêu quá nhanh/không an toàn, HLV hiện gợi ý; chạm 👉 để áp dụng ngay.', 'Có thể sửa hồ sơ bất kỳ lúc nào: chạm biểu tượng hồ sơ góc phải → <b>Sửa hồ sơ</b>.'])
   + sec('🏠', '2. Màn hình Hôm nay', ['Thẻ xanh: lời chào, ngày dương & âm lịch, giai đoạn, chuỗi ngày 🔥. Nút ‹ › để ghi bù ngày trước.', '<b>Buổi tập hôm nay</b>: chạm ▶ Bắt đầu tập. Ngày nghỉ có gợi ý giãn cơ 10 phút.', '<b>Thói quen nhỏ</b>: tích ✓ khi làm xong; chạm ⓘ để biết vì sao nên làm.', 'Ghi <b>nước</b> (chạm vào cốc), cân nặng, vòng eo, giấc ngủ, số bước, tâm trạng – tự lưu khi nhập xong.'])
   + sec('▶️', '3. Khi tập luyện', ['Màn hình tập có hình người 3D làm mẫu, đồng hồ đếm giờ, giọng đọc tiếng Việt và âm báo.', 'Bài đếm lần: làm xong bấm <b>Xong ✓</b>. Bài tính giờ: tự đếm ngược, có thể ⏸ Dừng.', 'Giữa các hiệp có thời gian nghỉ; bấm <b>+15 giây</b> nếu cần thở thêm.', 'Cuối buổi chấm <b>độ khó cảm nhận 1–10</b>. HLV dựa vào đó để tăng/giảm độ khó các buổi sau.', '⚠️ Dừng ngay nếu đau ngực, chóng mặt, khó thở bất thường hoặc đau nhói khớp.'])
@@ -576,13 +590,17 @@ function guidePage() {
   + `<button class="btn line block" data-a="about">ℹ️ Giới thiệu, bản quyền & ủng hộ</button>`;
 }
 function aboutPage() {
-  return `<div class="card c"><div style="font-size:56px">💪</div><h3 style="justify-content:center;font-size:19px">HLV Sức Khỏe</h3><div class="small muted">Phiên bản ${VERSION} · Huấn luyện viên sức khỏe cá nhân cho người Việt</div></div>
+  return `<div class="card c"><img src="img/logo.svg" alt="HLV Sức Khỏe" style="width:84px;height:84px;border-radius:20px"><h3 style="justify-content:center;font-size:19px">HLV Sức Khỏe</h3><div class="small muted">Phiên bản ${VERSION} · Huấn luyện viên sức khỏe cá nhân cho người Việt</div></div>
   <div class="card"><h3>🙏 Cảm ơn bạn đã sử dụng</h3><p class="small" style="margin:0">Ứng dụng được làm ra với mong muốn ai cũng có thể bắt đầu sống khỏe từ những bước nhỏ nhất – miễn phí, không quảng cáo, không thu thập dữ liệu. Cảm ơn bạn đã tin dùng và kiên trì cùng HLV!</p></div>
   <div class="card c"><h3 style="justify-content:center">☕ Mời người phát triển một ly cà phê</h3><p class="small muted" style="margin:0 0 8px">Nếu bạn thấy ứng dụng hữu ích và muốn ủng hộ người phát triển duy trì, cải tiến, bạn có thể chuyển khoản tùy tâm qua mã VietQR dưới đây. Mọi sự ủng hộ đều là động lực rất lớn. Xin chân thành cảm ơn!</p>
     <img src="img/qr_ung_ho.png" alt="Mã VietQR ủng hộ" style="width:min(240px,70%);border-radius:12px;border:1px solid var(--line);background:#fff;padding:6px">
     <div class="small" style="margin-top:6px"><b>${BANK.name}</b><br>${BANK.bank} · <b>${BANK.acc}</b></div>
     <div class="row" style="justify-content:center;margin-top:8px"><button class="btn sm line" data-a="copy" data-v="${BANK.acc}">📋 Chép số tài khoản</button></div>
-    <p class="tiny muted" style="margin:8px 0 0">Mở ứng dụng ngân hàng → Quét QR (hoặc chụp màn hình rồi chọn ảnh QR). Ủng hộ là hoàn toàn tự nguyện; ứng dụng vẫn miễn phí đầy đủ tính năng.</p></div>
+    <p class="tiny muted" style="margin:8px 0 0">Mở ứng dụng ngân hàng → Quét QR (hoặc chụp màn hình rồi chọn ảnh QR). Ủng hộ là hoàn toàn tự nguyện; ứng dụng vẫn miễn phí đầy đủ tính năng.</p>
+    <hr class="sep"><h3 style="justify-content:center">🌏 Ủng hộ từ nước ngoài qua PayPal</h3>
+    <p class="small muted" style="margin:0 0 8px">Mở PayPal → <b>Gửi tiền</b> → nhập email bên dưới → chọn số tiền và đơn vị tiền tệ của bạn.</p>
+    <div class="small"><b class="nt">${PAYPAL.email}</b></div>
+    <div class="row" style="justify-content:center;margin-top:8px;flex-wrap:wrap"><a class="btn sm" style="background:#003087" href="${PAYPAL.me || 'https://www.paypal.com/myaccount/transfer/homepage/pay'}" target="_blank" rel="noopener">🅿️ Mở PayPal</a><button class="btn sm line" data-a="copy" data-v="${PAYPAL.email}">📋 Chép email PayPal</button></div></div>
   <div class="card"><h3>🔗 Chia sẻ ứng dụng</h3><p class="small" style="margin:0 0 8px">Gửi link này cho người thân, bạn bè để cùng sống khỏe:<br><b style="word-break:break-all">${APP_URL}</b></p>
     <div class="row wrap"><button class="btn sm ghost" data-a="shareApp">📤 Chia sẻ</button><button class="btn sm line" data-a="copy" data-v="${APP_URL}">📋 Chép link</button><a class="btn sm line" href="${REPO_URL}" target="_blank" rel="noopener">🐙 Trang GitHub</a></div></div>
   <div class="card"><h3>✉️ Liên hệ, góp ý</h3><p class="small" style="margin:0 0 8px">Mọi góp ý, báo lỗi, đề xuất tính năng xin gửi về: <b>${EMAIL}</b></p><div class="row"><a class="btn sm ghost" href="mailto:${EMAIL}?subject=${encodeURIComponent('Góp ý HLV Sức Khỏe v' + VERSION)}">✉️ Gửi email</a><button class="btn sm line" data-a="copy" data-v="${EMAIL}">📋 Chép địa chỉ</button></div></div>
@@ -590,7 +608,7 @@ function aboutPage() {
     <li>Ứng dụng cung cấp thông tin và hướng dẫn <b>mang tính giáo dục sức khỏe chung</b>, không phải là tư vấn, chẩn đoán hay điều trị y khoa, và không thay thế ý kiến của bác sĩ, chuyên gia dinh dưỡng hay huấn luyện viên được đào tạo.</li>
     <li>Hãy <b>hỏi ý kiến bác sĩ trước khi bắt đầu</b> chương trình tập luyện/ăn uống mới, đặc biệt nếu bạn có bệnh tim mạch, tăng huyết áp, tiểu đường, bệnh xương khớp, đang mang thai, sau sinh, mới phẫu thuật, hoặc dưới 18 tuổi (cần có cha mẹ/người giám hộ đồng hành).</li>
     <li>Các chỉ số (BMI, BMR, TDEE, calo, đạm…) và giá trị dinh dưỡng món ăn là <b>ước tính</b> theo công thức phổ biến; nhu cầu thực tế của mỗi người có thể khác.</li>
-    <li>Bạn tự chịu trách nhiệm về việc áp dụng các bài tập và chế độ ăn. <b>Dừng ngay</b> và tìm hỗ trợ y tế khi có dấu hiệu bất thường (đau ngực, khó thở, chóng mặt, đau nhói khớp…). Cấp cứu: gọi <b>115</b>.</li>
+    <li>Bạn tự chịu trách nhiệm về việc áp dụng các bài tập và chế độ ăn. <b>Dừng ngay</b> và tìm hỗ trợ y tế khi có dấu hiệu bất thường (đau ngực, khó thở, chóng mặt, đau nhói khớp…). Cấp cứu: gọi <b class="nt">${SOS()}</b>.</li>
     <li>Mô hình 3D chỉ minh họa động tác; hãy đọc kỹ hướng dẫn chữ và lưu ý an toàn. Tập bơi, xà đơn, cầu lông cần môi trường an toàn và người giám sát khi cần.</li>
     <li>Dữ liệu (kể cả ảnh) chỉ lưu trên thiết bị của bạn; người phát triển không thu thập và không chịu trách nhiệm khi dữ liệu bị mất do xóa ứng dụng, đổi máy hay lỗi thiết bị – hãy sao lưu định kỳ.</li>
     <li>Người phát triển không chịu trách nhiệm cho bất kỳ thiệt hại trực tiếp hay gián tiếp nào phát sinh từ việc sử dụng ứng dụng.</li></ol></div>
@@ -606,6 +624,9 @@ function renderSheet() {
     h = `<h3 style="margin:0 0 8px">👨‍👩‍👧 Hồ sơ</h3>${S.profiles.map(x => { const a = E.age(x); return `<div class="list-item" data-a="switch" data-v="${x.id}"><span class="avatar">${esc(x.avatar)}</span><span class="sp"><div class="b">${esc(x.name)}</div><div class="tiny muted">${a} tuổi · ${GOALS[x.goal].name}</div></span>${x.id === S.active ? '✅' : ''}</div>`; }).join('')}
     <div class="fab-row"><button class="btn ghost sp" data-a="addProfile">+ Thêm thành viên</button><button class="btn line sp" data-a="editProfile">✏️ Sửa hồ sơ</button></div>
     <hr class="sep"><h3 style="margin:0 0 6px">⚙️ Cài đặt</h3>
+    <label class="f" style="margin-top:4px">🌐 Ngôn ngữ / Language</label>${langChips()}
+    <label class="f">📍 Nơi bạn đang sống <span class="muted small">(số cấp cứu: <span class="nt">${SOS()}</span>)</span></label><select class="in" data-a2="setCountry">${Object.entries(COUNTRIES).map(([k, c]) => `<option value="${k}" ${S.settings.country === k ? 'selected' : ''}>${c[0]}</option>`).join('')}</select>
+    <label class="f">📏 Đơn vị đo của hồ sơ này</label><div class="chips">${[['metric', 'kg · cm'], ['imperial', 'lb · in']].map(([k, l]) => `<span class="chip ${(p.units || 'metric') === k ? 'on' : ''}" data-a="setUnitsP" data-v="${k}">${l}</span>`).join('')}</div>
     <div class="check ${S.settings.voice ? 'on' : ''}" data-a="setting" data-v="voice"><span class="box">✓</span><span class="txt" style="text-decoration:none;color:inherit">🗣️ Giọng đọc hướng dẫn khi tập</span></div>
     <div class="check ${S.settings.sound ? 'on' : ''}" data-a="setting" data-v="sound"><span class="box">✓</span><span class="txt" style="text-decoration:none;color:inherit">🔔 Âm báo đếm giờ</span></div>
     <hr class="sep"><h3 style="margin:0 0 6px">💾 Dữ liệu</h3><p class="tiny muted" style="margin:0 0 8px">Dữ liệu chỉ nằm trên máy này. Hãy sao lưu định kỳ (mỗi tháng) để không mất khi đổi máy hoặc xóa ứng dụng.</p>
@@ -617,7 +638,7 @@ function renderSheet() {
   if (s.type === 'habit') { const H = HABITS[s.id]; h = `<div style="font-size:40px">${H.icon}</div><h3>${H.name}</h3><p>${H.why}</p><button class="btn block" data-a="closeSheet">Đã hiểu</button>`; }
   if (s.type === 'food') {
     const F = FOOD[s.id];
-    h = `<h3 style="margin:0">${F.name}</h3><p class="small muted">${F.unit} = ${F.kcal} kcal · Đạm ${F.p} g</p>
+    h = `<h3 style="margin:0">${F.name}</h3><p class="small muted"><span class="nt">${F.unit}</span> = ${F.kcal} kcal · Đạm ${F.p} g</p>
       <label class="f">Số phần</label><div class="food-q"><button data-a="fq" data-v="-0.5">−</button><b style="min-width:50px;text-align:center;font-size:20px">${s.q}</b><button data-a="fq" data-v="0.5">+</button><span class="sp"></span><b>${n0(F.kcal * s.q)} kcal</b></div>
       <label class="f">Bữa</label><div class="chips">${Object.entries(E.MEAL_NAMES).map(([k, l]) => `<span class="chip ${s.meal === k ? 'on' : ''}" data-a="fmeal" data-v="${k}">${l}</span>`).join('')}</div>
       <button class="btn block" style="margin-top:14px" data-a="confirmFood">Thêm</button>`;
@@ -687,7 +708,7 @@ function renderPlayer() {
   }
   let center = '';
   if (pl.mode === 'ready') center = `<div class="c" style="margin:auto 0"><div class="phase">${pl.session.name}</div><h2 style="margin:10px 0 4px">Sẵn sàng chưa?</h2><p class="muted small">${pl.session.minutes} phút · ${pl.steps.length} phần</p>
-      <div class="card" style="text-align:left"><div class="small">✔️ Đã uống vài ngụm nước<br>✔️ Không gian thoáng, sàn không trơn<br>✔️ Dừng ngay nếu đau ngực, chóng mặt, đau nhói khớp</div></div>
+      <div class="card" style="text-align:left"><div class="small">✔️ Đã uống vài ngụm nước<br>✔️ Không gian thoáng, sàn không trơn<br>✔️ Dừng ngay nếu đau ngực, chóng mặt, đau nhói khớp<br>🚑 Cấp cứu: <b class="nt">${SOS()}</b></div></div>
       <button class="btn block" data-a="plGo" style="padding:16px;font-size:17px">▶ Bắt đầu</button></div>`;
   else if (pl.mode === 'rest') center = `<div class="c"><div class="phase" style="background:var(--warn-soft);color:var(--warn)">Nghỉ</div><div class="big" id="plBig" style="margin:8px 0">${fmtT(pl.remain)}</div>
       <div class="muted small">Tiếp theo</div><div class="b" style="font-size:18px">${nx ? EX[nx.ex].name : ''}</div><div class="small muted">${nx ? (nx.sets > 1 ? `Hiệp ${nx.set}/${nx.sets} · ` : '') + (nx.reps ? nx.reps + ' lần' : nx.secs + ' giây') : ''}</div></div>
@@ -749,15 +770,17 @@ const A = {
   obfinish: () => {
     const pr = draftProfile();
     if (ob.edit) { const i = S.profiles.findIndex(x => x.id === ob.edit); const old = S.profiles[i]; if (old.weight !== pr.weight) { pr.logs = pr.logs || {}; pr.logs[E.today()] = { ...(pr.logs[E.today()] || {}), w: pr.weight }; } S.profiles[i] = pr; toast('Đã cập nhật hồ sơ.'); }
-    else { pr.id = 'p' + Date.now().toString(36); pr.startWeight = pr.weight; pr.logs = { [E.today()]: { w: pr.weight, ...(pr.waist ? { waist: pr.waist } : {}) } }; pr.adj = {}; S.profiles.push(pr); S.active = pr.id; toast('Chào mừng ' + pr.name + '! Hành trình bắt đầu từ hôm nay 🌱'); }
+    else { pr.id = 'p' + Date.now().toString(36); pr.startWeight = pr.weight; pr.logs = { [E.today()]: { w: pr.weight, ...(pr.waist ? { waist: pr.waist } : {}) } }; pr.adj = {}; S.profiles.push(pr); S.active = pr.id; toast(`Chào mừng “${pr.name}”! Hành trình bắt đầu từ hôm nay 🌱`); }
     save(); ob = null; ui.tab = 'today'; ui.day = E.today(); render(); scrollTo(0, 0);
   },
   import: () => importFile(),
   shareApp: () => { const d = { title: 'HLV Sức Khỏe', text: 'Huấn luyện viên sức khỏe cá nhân miễn phí cho người Việt', url: APP_URL }; if (navigator.share) navigator.share(d).catch(() => { }); else A.copy({ dataset: { v: APP_URL } }); },
+  setLang: el => { if (el.dataset.v === getLang()) return; setLang(el.dataset.v); location.reload(); },
+  setUnitsP: el => { P().units = el.dataset.v; save(); render(); },
   guide: () => { ui.sheet = null; push('guide'); },
   about: () => { ui.sheet = null; push('about'); },
   photos: () => push('photos'),
-  copy: el => { const t = el.dataset.v; const ok = () => toast('Đã chép: ' + t); try { navigator.clipboard.writeText(t).then(ok, () => { fallbackCopy(t); ok(); }); } catch (e) { fallbackCopy(t); ok(); } },
+  copy: el => { const t = el.dataset.v; const ok = () => toast(`Đã chép: “${t}”`); try { navigator.clipboard.writeText(t).then(ok, () => { fallbackCopy(t); ok(); }); } catch (e) { fallbackCopy(t); ok(); } },
   phPose: el => { ui.phPose = el.dataset.v; ui.cmpA = ui.cmpB = null; renderLayer(); },
   phMode: el => { ui.phMode = el.dataset.v; renderLayer(); },
   photoEvery: el => { P().photoEvery = +el.dataset.v; save(); renderLayer(); },
@@ -816,7 +839,7 @@ const A = {
   pickFood: el => setSheet({ type: 'food', id: el.dataset.v, q: 1, meal: ui.foodMeal || 'trua' }),
   fq: el => { ui.sheet.q = Math.max(0.5, Math.round((ui.sheet.q + +el.dataset.v) * 2) / 2); renderLayer(); },
   fmeal: el => { ui.sheet.meal = el.dataset.v; renderLayer(); },
-  confirmFood: () => { const s = ui.sheet, L = LOG(); L.meals = L.meals || {}; (L.meals[s.meal] = L.meals[s.meal] || []).push({ f: s.id, q: s.q }); L.habitPlan = L.habitPlan || E.habitsFor(P()); save(); ui.sheet = null; toast(`Đã thêm ${FOOD[s.id].name}`); ui.pages.pop(); ui.forceDetail = true; render(); },
+  confirmFood: () => { const s = ui.sheet, L = LOG(); L.meals = L.meals || {}; (L.meals[s.meal] = L.meals[s.meal] || []).push({ f: s.id, q: s.q }); L.habitPlan = L.habitPlan || E.habitsFor(P()); save(); ui.sheet = null; toast(`Đã thêm “${FOOD[s.id].name}”`); ui.pages.pop(); ui.forceDetail = true; render(); },
   rmFood: el => { const L = LOG(); L.meals[el.dataset.v].splice(+el.dataset.i, 1); save(); render(); },
   foodTable: () => push('foodTable'),
   // báo cáo
@@ -842,7 +865,7 @@ const A = {
     save(); A.plQuit(); toast('Đã lưu buổi tập 💪');
   },
 };
-function rerenderOb(top) { $('#app').innerHTML = renderOb(); if (top) scrollTo(0, 0); }
+function rerenderOb(top) { setUnits(ob.d.units); $('#app').innerHTML = renderOb(); translateDOM($('#app')); if (top) scrollTo(0, 0); }
 
 document.addEventListener('click', ev => {
   const el = ev.target.closest('[data-a]'); if (!el) return;
@@ -852,19 +875,22 @@ document.addEventListener('click', ev => {
 });
 document.addEventListener('input', ev => {
   const t = ev.target;
-  if (t.dataset.k && ob) { setK(ob.d, t.dataset.k, t.value); return; }
+  if (t.dataset.k && ob) { setK(ob.d, t.dataset.k, t.dataset.u && t.value !== '' ? String(Math.round((t.dataset.u === 'w' ? wIn(+t.value) : lIn(+t.value)) * 100) / 100) : t.value); return; }
   if (t.id === 'cmpRange') { const v = +t.value; const top = $('#cmpTop'), ln = $('#cmpLine'); if (top) top.style.clipPath = `inset(0 ${100 - v}% 0 0)`; if (ln) ln.style.left = v + '%'; return; }
   if (t.id === 'foodQ') { const q = t.value.trim().toLowerCase(); document.querySelectorAll('#foodList [data-name]').forEach(r => r.style.display = !q || r.dataset.name.includes(q) || r.dataset.name.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').includes(q.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd')) ? '' : 'none'); }
 });
 document.addEventListener('change', ev => {
   const t = ev.target;
-  if (t.dataset.log) { const L = LOG(); const k = t.dataset.log; const v = t.value.trim(); if (v === '') delete L[k]; else L[k] = k === 'note' ? v : +v; if (k === 'w' && v) L.habitPlan = L.habitPlan || E.habitsFor(P()); save(); toast('Đã lưu ✓'); return; }
+  if (t.dataset.log) { const L = LOG(); const k = t.dataset.log; const v = t.value.trim(); if (v === '') delete L[k]; else L[k] = k === 'note' ? v : t.dataset.u ? Math.round((t.dataset.u === 'w' ? wIn(+v) : lIn(+v)) * 100) / 100 : +v; if (k === 'w' && v) L.habitPlan = L.habitPlan || E.habitsFor(P()); save(); toast('Đã lưu ✓'); return; }
   if (t.dataset.a2 === 'libMuscle') { ui.libMuscle = t.value; render(); }
+  if (t.dataset.a2 === 'setCountry' || t.dataset.a2 === 'obCountry') { S.settings.country = t.value; save(); if (ob && t.dataset.a2 === 'obCountry') { ob.d.units = COUNTRIES[t.value][2]; rerenderOb(); } else renderLayer(); return; }
   if (t.dataset.a2 === 'cmpA' || t.dataset.a2 === 'cmpB') { ui[t.dataset.a2] = t.value; renderLayer(); }
 });
 window.addEventListener('popstate', () => { if (pl) return; if (ui.sheet) { ui.sheet = null; renderLayer(); } if (ui.pages.length) pop(); });
 
+observeBody();
 render();
 loadPhotos();
 window.__reloadPhotos = loadPhotos;
+window.__i18n = I18N_MISSING;
 if (!webglOK()) console.warn('WebGL không khả dụng – phần 3D sẽ hiển thị hướng dẫn chữ.');

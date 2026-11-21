@@ -1,4 +1,6 @@
-# 💪 HLV Sức Khỏe – Huấn luyện viên sức khỏe cá nhân cho người Việt
+<img src="img/logo.svg" width="96" alt="HLV Sức Khỏe logo">
+
+# HLV Sức Khỏe – Huấn luyện viên sức khỏe cá nhân cho người Việt
 
 Ứng dụng web cài được lên điện thoại (PWA), chạy cả khi không có mạng. Ứng dụng giúp bạn thay đổi từ **những thói quen nhỏ nhất** đến một cơ thể khỏe mạnh lâu dài. Dùng được cho nam và nữ từ 12 tuổi, nhiều hồ sơ cho cả gia đình.
 
@@ -16,6 +18,7 @@ Mở link trên điện thoại → iPhone: Safari → Chia sẻ → *Thêm vào
 - **Ảnh tiến độ:** chụp định kỳ, có nhắc, so sánh trước–sau kiểu cạnh nhau hoặc trượt.
 - **Hướng dẫn khi tập:** đếm giờ, giọng đọc tiếng Việt, chấm độ khó (RPE).
 - **Báo cáo** tuần / tháng / năm: biểu đồ, lịch chăm chỉ, nhận xét HLV, huy hiệu, in PDF.
+- **Song ngữ Việt – Anh**, đơn vị **kg/cm hoặc lb/in**, **số cấp cứu theo nơi sống** (Việt Nam 113, Mỹ 911, châu Âu 112…) – dùng được cho người Việt ở nước ngoài.
 - Sao lưu và khôi phục (kèm ảnh). **Không quảng cáo, không thu thập dữ liệu:** mọi thứ lưu trên máy người dùng.
 
 ## Dành cho người phát triển: đưa lên GitHub Pages
@@ -40,19 +43,28 @@ Mở link trên điện thoại → iPhone: Safari → Chia sẻ → *Thêm vào
 | `js/viewer3d.js` | Mô hình người 3D (three.js) |
 | `js/lunar.js` | Âm lịch Việt Nam |
 | `js/photos.js` | Lưu ảnh tiến độ (IndexedDB) |
+| `js/i18n.js`, `js/en.js`, `js/data_en.js` | Song ngữ, đơn vị đo, số cấp cứu theo nước |
+| `img/logo.svg` | Logo ứng dụng |
 | `sw.js`, `manifest.webmanifest`, `icons/` | Chạy offline & cài như app |
 
 ## Liên hệ – góp ý
 📧 **nddzungx@gmail.com** · Báo lỗi trên GitHub: https://github.com/nddzungx/hlv-suc-khoe/issues
 
 ## Ủng hộ
-Nếu thấy hữu ích, bạn có thể mời người phát triển một ly cà phê qua VietQR trong mục **Giới thiệu & ủng hộ** của ứng dụng (BIDV · 3210256468 · NGUYEN DUC DUNG).
+Nếu thấy hữu ích, bạn có thể mời người phát triển một ly cà phê trong mục **Giới thiệu & ủng hộ** của ứng dụng:
+- Trong nước: VietQR – BIDV · 3210256468 · NGUYEN DUC DUNG
+- Nước ngoài: PayPal – ndd.phateco@gmail.com
 
 ## Miễn trừ trách nhiệm
 Ứng dụng cung cấp hướng dẫn giáo dục sức khỏe chung, **không thay thế** tư vấn, chẩn đoán hay điều trị của bác sĩ. Hãy hỏi ý kiến bác sĩ trước khi tập luyện nếu bạn có bệnh lý, đang mang thai/sau sinh hoặc dưới 18 tuổi. Xem đầy đủ trong ứng dụng.
 
 ## Phiên bản
-**1.1.1** (21/11/2026) – thêm ăn chay theo âm lịch, ảnh tiến độ, 18 bài tập mới (dây kháng lực, xà đơn, bơi, cầu lông, dưỡng sinh, sàn chậu sau sinh), hướng dẫn sử dụng, trang giới thiệu & ủng hộ, nút chia sẻ ứng dụng.
+- **1.2.2** (21/11/2026): ứng dụng chạy tại **app.hlvsuckhoe.com**; trang chủ hlvsuckhoe.com.
+- **1.2.0** (21/11/2026): logo mới; song ngữ Việt – Anh; đơn vị lb/in; số cấp cứu theo nước (Việt Nam: 113, 115 vẫn dùng trong giai đoạn chuyển tiếp); ủng hộ qua PayPal cho người ở nước ngoài.
+- **1.1.1**: ăn chay theo âm lịch, ảnh tiến độ, 18 bài tập mới, hướng dẫn sử dụng, giới thiệu & ủng hộ, chia sẻ ứng dụng.
+
+## English
+**HLV Sức Khỏe** is a free, offline-capable personal health coach (PWA) for Vietnamese people at home and abroad: habit-first roadmap, 48 exercises with 3D demos, Vietnamese-food nutrition, lunar-calendar vegetarian days, progress photos and weekly/monthly/yearly reports. Switch to **English** and **lb/in** in Settings. Open: **https://nddzungx.github.io/hlv-suc-khoe/** · Feedback: nddzungx@gmail.com
 
 ## Bản quyền
 © 2026 Nguyễn Đức Dũng. Bảo lưu mọi quyền – xem [LICENSE](LICENSE).

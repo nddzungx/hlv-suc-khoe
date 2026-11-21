@@ -540,7 +540,7 @@ export const LESSONS = [
     ['li', ['Tăng **một yếu tố mỗi lần**: số lần → số hiệp → độ khó bài → tạ.', 'Quy tắc 2 lần: khi làm hiệp cuối vẫn dư sức 2 lần trở lên, hãy tăng độ khó.', 'Thang cảm nhận gắng sức (RPE 1–10): tập ở mức 6–8 là lý tưởng.', 'Tuần thứ 4–6 có thể giảm nhẹ để cơ thể hồi phục.']],
   ] },
   { id: 'safety', icon: '🛡️', title: 'Khởi động, giãn cơ và an toàn', min: 3, body: [
-    ['li', ['Luôn khởi động 3–5 phút: đi bộ tại chỗ, xoay khớp.', 'Đau nhói, đau khớp, chóng mặt, tức ngực, khó thở bất thường → **dừng ngay**. Tức ngực lan tay trái, vã mồ hôi: gọi 115.', 'Mỏi cơ, nóng cơ là bình thường; đau khớp là không bình thường.', 'Uống nước trước – trong – sau tập; trời nóng ẩm Việt Nam dễ mất nước.', 'Tránh tập ngoài trời 10h–15h mùa hè.']],
+    ['li', ['Luôn khởi động 3–5 phút: đi bộ tại chỗ, xoay khớp.', 'Đau nhói, đau khớp, chóng mặt, tức ngực, khó thở bất thường → **dừng ngay**. Tức ngực lan tay trái, vã mồ hôi: gọi cấp cứu {SOS}.', 'Mỏi cơ, nóng cơ là bình thường; đau khớp là không bình thường.', 'Uống nước trước – trong – sau tập; trời nóng ẩm Việt Nam dễ mất nước.', 'Tránh tập ngoài trời 10h–15h mùa hè.']],
     ['p', 'Nếu bạn có bệnh tim mạch, tăng huyết áp, tiểu đường, đang mang thai hoặc mới phẫu thuật: hỏi ý kiến bác sĩ trước khi tăng cường độ.'],
   ] },
   { id: 'teen', icon: '🧒', title: 'Tuổi 12–17: tập luyện thế nào cho đúng', min: 3, body: [

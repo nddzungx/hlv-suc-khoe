@@ -7,7 +7,7 @@
 <meta name="application-name" content="HLV Sức Khỏe">
 <meta name="description" content="Huấn luyện viên sức khỏe cá nhân cho người Việt: lộ trình tập luyện từ thói quen nhỏ, dinh dưỡng món Việt, mô hình 3D bài tập, theo dõi và báo cáo tuần – tháng – năm.">
 <meta name="theme-color" content="#0f8a5f">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E💪%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="img/logo.svg" type="image/svg+xml">
 <style>
 :root{--primary:#0f8a5f;--primary2:#14b37d;--primary-soft:#e3f5ec;--accent:#f59e0b;--bg:#f3f6f5;--card:#fff;--text:#1d2733;--muted:#66758a;--line:#e3e8ee;--bad:#e5484d;--bad-soft:#fdecec;--warn:#d97706;--warn-soft:#fff5e1;--ok:#0f8a5f;--ok-soft:#e3f5ec;--r:16px;--shadow:0 1px 2px rgba(16,24,40,.05),0 4px 14px rgba(16,24,40,.06);--safe-b:env(safe-area-inset-bottom);--safe-t:env(safe-area-inset-top)}
 @media (prefers-color-scheme:dark){:root{--bg:#0f1513;--card:#18201d;--text:#e6ece9;--muted:#93a39c;--line:#26312c;--primary-soft:#173a2c;--bad-soft:#3a1c1d;--warn-soft:#3a2c12;--ok-soft:#173a2c;--shadow:none}}
@@ -156,7 +156,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:12px 0}
 var ios=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),dp=null;
 function show(){if(document.getElementById('pwa-tip'))return;var d=document.createElement('div');d.id='pwa-tip';d.setAttribute('role','dialog');
 d.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:2147483000;background:#fff;color:#222;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.25);padding:12px 14px;font:15px/1.45 system-ui,-apple-system,sans-serif;display:flex;gap:10px;align-items:center;border-left:6px solid #0f8a5f';
-d.innerHTML='<img src="icons/icon-192.png" alt="" style="width:40px;height:40px;border-radius:9px"><div style="flex:1"><b>Cài lên điện thoại</b><br><span>'+(ios?'Bấm <b>Chia sẻ</b> rồi chọn <b>Thêm vào MH chính</b> để mở như app và dùng offline.':'Bấm <b>Cài đặt</b> để thêm vào màn hình chính và dùng offline.')+'</span></div>'+(dp?'<button id="pwa-in" style="border:0;background:#0f8a5f;color:#fff;border-radius:999px;padding:8px 12px;font:inherit">Cài đặt</button>':'')+'<button id="pwa-x" aria-label="Ẩn" style="border:0;background:none;font-size:20px;color:#888">✕</button>';
+d.innerHTML='<img src="icons/icon-192.png" alt="" style="width:40px;height:40px;border-radius:9px"><div style="flex:1"><b>Cài lên điện thoại</b><br><span>'+(ios?'Bấm <b>Chia sẻ</b> rồi chọn <b>Thêm vào MH chính</b> để mở như app và dùng offline.':'Bấm <b>Cài app</b> để thêm vào màn hình chính và dùng offline.')+'</span></div>'+(dp?'<button id="pwa-in" style="border:0;background:#0f8a5f;color:#fff;border-radius:999px;padding:8px 12px;font:inherit">Cài app</button>':'')+'<button id="pwa-x" aria-label="Ẩn" style="border:0;background:none;font-size:20px;color:#888">✕</button>';
 document.body.appendChild(d);document.getElementById('pwa-x').onclick=function(){d.remove();try{localStorage.setItem('pwa-hide-hlv-sức-khỏe','1')}catch(e){}};
 var b=document.getElementById('pwa-in');if(b)b.onclick=function(){dp.prompt();dp.userChoice.finally(function(){d.remove()})}}
 addEventListener('beforeinstallprompt',function(e){e.preventDefault();dp=e;var o=document.getElementById('pwa-tip');if(o)o.remove();show()});

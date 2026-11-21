@@ -1,0 +1,30 @@
+{
+ "name": "HLV Sức Khỏe",
+ "short_name": "HLV Sức Khỏe",
+ "description": "Huấn luyện viên sức khỏe cá nhân cho người Việt: lộ trình tập luyện từ thói quen nhỏ, dinh dưỡng món Việt, mô hình 3D bài tập, theo dõi và báo cáo tuần – tháng – năm.",
+ "lang": "vi",
+ "start_url": "./",
+ "scope": "./",
+ "display": "standalone",
+ "orientation": "any",
+ "background_color": "#f3f6f5",
+ "theme_color": "#0f8a5f",
+ "icons": [
+  {
+   "src": "icons/icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png"
+  },
+  {
+   "src": "icons/icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png"
+  },
+  {
+   "src": "icons/icon-512-maskable.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "maskable"
+  }
+ ]
+}

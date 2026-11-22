@@ -150,6 +150,8 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:12px 0}
 <div id="app"><div class="empty" style="padding-top:40vh">Đang tải…</div></div>
 <div id="layer"></div>
 <noscript>Ứng dụng cần bật JavaScript.</noscript>
+<script src="js/install-guide.js"></script>
+<script>HLVInstall.init({ name: 'HLV Sức Khỏe', url: 'app.hlvsuckhoe.com', icon: 'icons/icon-192.png', color: '#0f8a5f', data: true });</script>
 <script type="module" src="js/app.js"></script>
 <script>if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}</script>
 <script>(function(){try{var st=navigator.standalone===true||matchMedia('(display-mode: standalone)').matches;if(st||!/^https?:/.test(location.protocol))return;var h;try{h=localStorage.getItem('pwa-hide-hlv-sức-khỏe')}catch(e){}if(h)return;

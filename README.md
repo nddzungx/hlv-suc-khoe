@@ -59,6 +59,7 @@ Nếu thấy hữu ích, bạn có thể mời người phát triển một ly c
 Ứng dụng cung cấp hướng dẫn giáo dục sức khỏe chung, **không thay thế** tư vấn, chẩn đoán hay điều trị của bác sĩ. Hãy hỏi ý kiến bác sĩ trước khi tập luyện nếu bạn có bệnh lý, đang mang thai/sau sinh hoặc dưới 18 tuổi. Xem đầy đủ trong ứng dụng.
 
 ## Phiên bản
+- **1.2.3** (22/11/2026): mục 10 "Cài lên điện thoại" thành hướng dẫn chi tiết (iPhone, Android, Samsung, máy tính, Zalo/Facebook, lưu ý dữ liệu trên iPhone), nút "📲 Cài lên điện thoại" trong Cài đặt, mở thẳng bằng `app.hlvsuckhoe.com/#cai-dat`. Tệp mới `js/install-guide.js`.
 - **1.2.2** (21/11/2026): ứng dụng chạy tại **app.hlvsuckhoe.com**; trang chủ hlvsuckhoe.com.
 - **1.2.0** (21/11/2026): logo mới; song ngữ Việt – Anh; đơn vị lb/in; số cấp cứu theo nước (Việt Nam: 113, 115 vẫn dùng trong giai đoạn chuyển tiếp); ủng hộ qua PayPal cho người ở nước ngoài.
 - **1.1.1**: ăn chay theo âm lịch, ảnh tiến độ, 18 bài tập mới, hướng dẫn sử dụng, giới thiệu & ủng hộ, chia sẻ ứng dụng.

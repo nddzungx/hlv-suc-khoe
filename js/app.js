@@ -10,7 +10,7 @@ import * as DATA from './data.js';
 if (isEN()) applyEN(DATA);
 document.documentElement.lang = getLang();
 
-export const VERSION = '1.2.2';
+export const VERSION = '1.2.3';
 const APP_URL = 'https://app.hlvsuckhoe.com/', REPO_URL = 'https://github.com/nddzungx/hlv-suc-khoe';
 const PAYPAL = { email: 'ndd.phateco@gmail.com', me: '' }; // me: dán link paypal.me/... nếu có
 const AUTHOR = 'Nguyễn Đức Dũng', EMAIL = 'nddzungx@gmail.com', BANK = { name: 'NGUYEN DUC DUNG', bank: 'BIDV', acc: '3210256468' };
@@ -585,7 +585,7 @@ function guidePage() {
   + sec('📸', '7. Ảnh tiến độ trước – sau', ['Vào từ thẻ nhắc trên Hôm nay hoặc tab Báo cáo → <b>Mở ảnh tiến độ</b>.', 'Chọn góc (chính diện/nghiêng/sau) → <b>Chụp ngay</b> hoặc chọn ảnh có sẵn.', 'So sánh 2 ngày bất kỳ theo kiểu <b>cạnh nhau</b> hoặc <b>trượt so sánh</b>, kèm thay đổi cân nặng và vòng eo.', 'App nhắc chụp lại mỗi 2 hoặc 4 tuần. Ảnh chỉ nằm trên máy của bạn.'])
   + sec('📊', '8. Báo cáo', ['Chọn Tuần / Tháng / Năm, dùng ‹ › để xem kỳ trước.', 'Gồm: mức tuân thủ, số buổi & phút tập, calo, thói quen, cân nặng, giấc ngủ, nước, biểu đồ, lịch chăm chỉ, nhận xét của HLV và huy hiệu.', 'Bấm <b>In / lưu PDF</b> để lưu hoặc gửi cho bác sĩ, người thân.'])
   + sec('👨‍👩‍👧', '9. Gia đình, sao lưu, cài đặt', ['Chạm biểu tượng hồ sơ → <b>+ Thêm thành viên</b> (từ 12 tuổi). Chạm tên để chuyển hồ sơ.', '<b>Sao lưu</b> mỗi tháng: tạo tệp .json (có thể kèm ảnh) – lưu vào Google Drive/Zalo của bạn. Đổi máy thì <b>Khôi phục</b> từ tệp này.', 'Bật/tắt giọng đọc và âm báo trong phần Cài đặt.'])
-  + sec('📱', '10. Cài lên điện thoại', ['Địa chỉ ứng dụng: <b>' + APP_URL + '</b>', '<b>iPhone</b>: mở link bằng Safari → nút Chia sẻ → <b>Thêm vào MH chính</b>.', '<b>Android</b>: mở bằng Chrome → <b>Cài đặt ứng dụng</b> (hoặc menu ⋮ → Thêm vào màn hình chính).', 'Lần đầu cần mạng; sau đó dùng được cả khi không có mạng.'])
+  + (window.HLVInstall ? `<div class="card md" id="cai-dat"><h3>📱 ${T('10. Cài lên điện thoại')}</h3>${HLVInstall.html()}</div>` : sec('📱', '10. Cài lên điện thoại', ['Địa chỉ ứng dụng: <b>' + APP_URL + '</b>', '<b>iPhone</b>: mở link bằng Safari → nút Chia sẻ → <b>Thêm vào MH chính</b>.', '<b>Android</b>: mở bằng Chrome → <b>Cài đặt ứng dụng</b> (hoặc menu ⋮ → Thêm vào màn hình chính).', 'Lần đầu cần mạng; sau đó dùng được cả khi không có mạng.']))
   + sec('❓', 'Câu hỏi thường gặp', ['<b>Vì sao chỉ tập 10 phút?</b> Giai đoạn đầu ưu tiên tạo thói quen. Làm đều 2 tuần, HLV sẽ mời bạn lên cấp.', '<b>Cân nặng không giảm?</b> Cân dao động do nước; xem xu hướng theo tuần, kiểm tra đồ uống có đường, bia rượu, lượng cơm.', '<b>Mất dữ liệu khi xóa app?</b> Có – hãy sao lưu định kỳ.', '<b>Góp ý, báo lỗi?</b> Gửi email ' + EMAIL + '.'])
   + `<button class="btn line block" data-a="about">ℹ️ Giới thiệu, bản quyền & ủng hộ</button>`;
 }
@@ -631,7 +631,7 @@ function renderSheet() {
     <div class="check ${S.settings.sound ? 'on' : ''}" data-a="setting" data-v="sound"><span class="box">✓</span><span class="txt" style="text-decoration:none;color:inherit">🔔 Âm báo đếm giờ</span></div>
     <hr class="sep"><h3 style="margin:0 0 6px">💾 Dữ liệu</h3><p class="tiny muted" style="margin:0 0 8px">Dữ liệu chỉ nằm trên máy này. Hãy sao lưu định kỳ (mỗi tháng) để không mất khi đổi máy hoặc xóa ứng dụng.</p>
     <div class="fab-row"><button class="btn line sp" data-a="export">⬇️ Sao lưu</button><button class="btn line sp" data-a="exportPh">⬇️ Sao lưu kèm ảnh</button></div><button class="btn line block" style="margin-top:8px" data-a="import">⬆️ Khôi phục từ tệp</button>
-    <hr class="sep"><div class="fab-row"><button class="btn ghost sp" data-a="guide">📖 Hướng dẫn</button><button class="btn ghost sp" data-a="about">☕ Giới thiệu & ủng hộ</button></div>
+    <hr class="sep"><div class="fab-row"><button class="btn ghost sp" data-a="guide">📖 Hướng dẫn</button><button class="btn ghost sp" data-install-guide>📲 Cài lên điện thoại</button><button class="btn ghost sp" data-a="about">☕ Giới thiệu & ủng hộ</button></div>
     <button class="btn line block" style="margin-top:8px;color:var(--bad)" data-a="delProfile">🗑️ Xóa hồ sơ "${esc(p.name)}"</button>
     <p class="tiny muted c" style="margin:12px 0 0">HLV Sức Khỏe v${VERSION} · © 2026 ${AUTHOR} · ${EMAIL}<br>Hướng dẫn mang tính tham khảo, không thay thế tư vấn y khoa.</p>`;
   }

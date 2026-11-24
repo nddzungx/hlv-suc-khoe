@@ -163,5 +163,6 @@ document.body.appendChild(d);document.getElementById('pwa-x').onclick=function()
 var b=document.getElementById('pwa-in');if(b)b.onclick=function(){dp.prompt();dp.userChoice.finally(function(){d.remove()})}}
 addEventListener('beforeinstallprompt',function(e){e.preventDefault();dp=e;var o=document.getElementById('pwa-tip');if(o)o.remove();show()});
 if(ios)addEventListener('load',function(){setTimeout(show,2500)})}catch(e){}})();</script>
+<!-- Cloudflare Web Analytics (thống kê lượt xem, không cookie, không lưu IP) --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1dd877b5432a4181b42a4b65990cb60c"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>
